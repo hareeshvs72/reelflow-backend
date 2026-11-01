@@ -80,6 +80,7 @@ app.use(
     secret: env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
+    proxy: true,
     store: MongoStore.create({
       mongoUrl: env.MONGODB_URI,
       ttl: 7 * 24 * 60 * 60, // 7 days

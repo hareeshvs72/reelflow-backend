@@ -1,6 +1,7 @@
 import { User } from '../models/User.js';
 import { asyncHandler, sendSuccess, sendError } from '../utils/api.js';
 import { logger } from '../config/logger.js';
+import { generateAuthToken } from '../utils/auth.js';
 
 export const register = asyncHandler(async (req, res) => {
   const { name, email, password } = req.body;
@@ -14,9 +15,11 @@ export const register = asyncHandler(async (req, res) => {
   const user = await User.create({ name, email, passwordHash: password });
 
   req.session.userId = user._id.toString();
+  await new Promise((resolve) => req.session.save(resolve));
   logger.info('User registered', { userId: user._id });
 
-  return sendSuccess(res, { user }, 201, 'Account created successfully');
+  const token = generateAuthToken(user._id.toString());
+  return sendSuccess(res, { user, token }, 201, 'Account created successfully');
 });
 
 export const login = asyncHandler(async (req, res) => {
@@ -34,12 +37,13 @@ export const login = asyncHandler(async (req, res) => {
   }
 
   req.session.userId = user._id.toString();
-  req.session.save();
+  await new Promise((resolve) => req.session.save(resolve));
   logger.info('User logged in', { userId: user._id });
 
   // Strip passwordHash from response
   const userData = user.toJSON();
-  return sendSuccess(res, { user: userData }, 200, 'Login successful');
+  const token = generateAuthToken(user._id.toString());
+  return sendSuccess(res, { user: userData, token }, 200, 'Login successful');
 });
 
 export const logout = asyncHandler(async (req, res) => {
@@ -59,5 +63,6 @@ export const getMe = asyncHandler(async (req, res) => {
   if (!user) {
     return sendError(res, 'User not found', 404);
   }
-  return sendSuccess(res, { user });
+  const token = generateAuthToken(user._id.toString());
+  return sendSuccess(res, { user, token });
 });
