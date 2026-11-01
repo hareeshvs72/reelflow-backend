@@ -4,8 +4,8 @@ import { z } from 'zod';
 const envSchema = z.object({
   NODE_ENV: z.enum(['development', 'production', 'test']).default('development'),
   PORT: z.coerce.number().default(5000),
-  CLIENT_URL: z.string().url(),
-  SERVER_URL: z.string().url(),
+  CLIENT_URL: z.string().url().default('https://reelflow-nu.vercel.app'),
+  SERVER_URL: z.string().url().default('https://reelflow-5s62.onrender.com'),
   MONGODB_URI: z.string().min(10),
   REDIS_URL: z.string().min(5),
   SESSION_SECRET: z.string().min(32),
@@ -15,9 +15,9 @@ const envSchema = z.object({
   CLOUDINARY_API_SECRET: z.string().min(1),
   META_APP_ID: z.string().min(1),
   META_APP_SECRET: z.string().min(1),
-  META_REDIRECT_URI: z.string().url(),
+  META_REDIRECT_URI: z.string().url().default('https://reelflow-5s62.onrender.com/api/instagram/callback'),
   INSTAGRAM_API_VERSION: z.string().default('v21.0'),
-  ALLOWED_ORIGINS: z.string().default('http://localhost:5173'),
+  ALLOWED_ORIGINS: z.string().default('https://reelflow-nu.vercel.app,http://localhost:5173'),
 });
 
 const parsed = envSchema.safeParse(process.env);

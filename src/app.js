@@ -26,23 +26,41 @@ app.use(
 );
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
-const allowedOrigins = env.ALLOWED_ORIGINS.split(',').map((o) => o.trim().replace(/\/$/, ''));
-app.use(
-  cors({
-    origin: (origin, callback) => {
-      if (!origin) return callback(null, true);
-      const cleanOrigin = origin.replace(/\/$/, '');
-      if (allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes(origin)) {
-        return callback(null, true);
-      }
-      logger.warn('CORS blocked request', { origin });
-      callback(new Error('Not allowed by CORS'));
-    },
-    credentials: true,
-    methods: ['GET', 'POST', 'PATCH', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
+const configuredOrigins = [
+  env.CLIENT_URL,
+  ...(env.ALLOWED_ORIGINS ? env.ALLOWED_ORIGINS.split(',') : []),
+  'https://reelflow-nu.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+]
+  .filter(Boolean)
+  .map((o) => o.trim().replace(/\/$/, ''));
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    const cleanOrigin = origin.replace(/\/$/, '');
+    const isAllowed =
+      configuredOrigins.includes(cleanOrigin) ||
+      configuredOrigins.includes(origin) ||
+      cleanOrigin.endsWith('.vercel.app') ||
+      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cleanOrigin);
+
+    if (isAllowed) {
+      return callback(null, true);
+    }
+    logger.warn('CORS blocked request', { origin });
+    return callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true,
+  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  exposedHeaders: ['Set-Cookie'],
+  optionsSuccessStatus: 200,
+};
+
+app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // ─── Body Parsers ─────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
