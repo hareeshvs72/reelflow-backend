@@ -14,6 +14,9 @@ import apiRoutes from './routes/api.routes.js';
 
 const app = express();
 
+// ─── Trust Proxy (Render, Heroku, reverse proxies) ───────────────────────────
+app.set('trust proxy', 1);
+
 // ─── Security Headers ─────────────────────────────────────────────────────────
 app.use(
   helmet({
@@ -23,11 +26,15 @@ app.use(
 );
 
 // ─── CORS ─────────────────────────────────────────────────────────────────────
-const allowedOrigins = env.ALLOWED_ORIGINS.split(',').map((o) => o.trim());
+const allowedOrigins = env.ALLOWED_ORIGINS.split(',').map((o) => o.trim().replace(/\/$/, ''));
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+      if (!origin) return callback(null, true);
+      const cleanOrigin = origin.replace(/\/$/, '');
+      if (allowedOrigins.includes(cleanOrigin) || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
       logger.warn('CORS blocked request', { origin });
       callback(new Error('Not allowed by CORS'));
     },
@@ -70,7 +77,7 @@ app.use(
     cookie: {
       httpOnly: true,
       secure: env.NODE_ENV === 'production',
-      sameSite: env.NODE_ENV === 'production' ? 'strict' : 'lax',
+      sameSite: env.NODE_ENV === 'production' ? 'none' : 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
     },
   })

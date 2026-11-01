@@ -1039,3 +1039,15 @@
 2026-11-01 19:34:22 [[32minfo[39m]: ReelFlow server running on port 5000 [development]
 2026-11-01 19:34:22 [[32minfo[39m]: Client URL: http://localhost:5173
 2026-11-01 19:34:31 [[32minfo[39m]: User logged in {"userId":"6ae0c081dc0ce1f8b246164d"}
+2026-11-01 20:10:58 [[32minfo[39m]: Cloudinary configured {"cloud":"dkhsmlfe3"}
+2026-11-01 20:10:59 [[32minfo[39m]: MongoDB connected: ac-ukzm5ca-shard-00-00.w1wfbei.mongodb.net
+2026-11-01 20:10:59 [[32minfo[39m]: ReelFlow server running on port 5000 [development]
+2026-11-01 20:10:59 [[32minfo[39m]: Client URL: https://reelflow-nu.vercel.app
+2026-11-01 20:11:10 [[32minfo[39m]: Cloudinary configured {"cloud":"dkhsmlfe3"}
+2026-11-01 20:11:11 [[32minfo[39m]: MongoDB connected: ac-ukzm5ca-shard-00-02.w1wfbei.mongodb.net
+2026-11-01 20:11:11 [[32minfo[39m]: ReelFlow server running on port 5000 [development]
+2026-11-01 20:11:11 [[32minfo[39m]: Client URL: https://reelflow-nu.vercel.app
+2026-11-01 20:11:54 [[32minfo[39m]: Cloudinary configured {"cloud":"dkhsmlfe3"}
+2026-11-01 20:11:55 [[32minfo[39m]: MongoDB connected: ac-ukzm5ca-shard-00-00.w1wfbei.mongodb.net
+2026-11-01 20:11:55 [[32minfo[39m]: ReelFlow server running on port 5000 [development]
+2026-11-01 20:11:55 [[32minfo[39m]: Client URL: https://reelflow-nu.vercel.app
