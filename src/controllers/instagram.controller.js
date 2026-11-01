@@ -19,6 +19,50 @@ export const REQUIRED_SCOPES = [
 const SCOPES_QUERY = REQUIRED_SCOPES.join(',');
 
 /**
+ * Helper to auto-link an account using a direct access token from environment.
+ */
+export async function linkAccountWithToken(userId, token) {
+  try {
+    const profileResponse = await fetch(
+      `${INSTAGRAM_API_BASE}/me?fields=id,username,name,account_type,profile_picture_url&access_token=${token}`
+    );
+    const profile = await profileResponse.json();
+    if (profile.error || !profile.id) {
+      logger.warn('Could not auto-link Instagram token', { error: profile.error });
+      return null;
+    }
+
+    let account = await InstagramAccount.findOne({ userId });
+    if (!account) {
+      account = new InstagramAccount({
+        userId,
+        instagramUserId: profile.id,
+      });
+    }
+
+    account.username = profile.username || 'creator';
+    account.name = profile.name || profile.username || 'Creator Account';
+    account.profilePictureUrl = profile.profile_picture_url || '';
+    account.accountType = profile.account_type || 'BUSINESS';
+    account.tokenExpiresAt = new Date(Date.now() + 60 * 24 * 60 * 60 * 1000);
+    account.grantedScopes = SCOPES_QUERY;
+    account.isConnected = true;
+    account.setAccessToken(token);
+    await account.save();
+
+    logger.info('Auto-linked Instagram account from token', {
+      userId,
+      igUserId: account.instagramUserId,
+      username: account.username,
+    });
+    return account;
+  } catch (err) {
+    logger.error('Error auto-linking Instagram token', { error: err.message });
+    return null;
+  }
+}
+
+/**
  * GET /api/instagram/config-status
  * Inspects backend Meta configuration and returns setup completeness status.
  */
@@ -36,6 +80,9 @@ export const getConfigStatus = asyncHandler(async (req, res) => {
       userId: req.session.userId,
       isConnected: true,
     });
+    if (!account && env.INSTAGRAM_ACCESS_TOKEN) {
+      account = await linkAccountWithToken(req.session.userId, env.INSTAGRAM_ACCESS_TOKEN);
+    }
   }
 
   return sendSuccess(res, {
@@ -231,10 +278,14 @@ export const callback = asyncHandler(async (req, res) => {
  * Returns the connected Instagram account info (never exposes plaintext tokens).
  */
 export const getAccount = asyncHandler(async (req, res) => {
-  const account = await InstagramAccount.findOne({
+  let account = await InstagramAccount.findOne({
     userId: req.session.userId,
     isConnected: true,
   });
+
+  if (!account && env.INSTAGRAM_ACCESS_TOKEN && req.session?.userId) {
+    account = await linkAccountWithToken(req.session.userId, env.INSTAGRAM_ACCESS_TOKEN);
+  }
 
   if (!account) {
     return sendSuccess(res, { account: null }, 200, 'No Instagram account connected');
@@ -260,10 +311,18 @@ export const getAccount = asyncHandler(async (req, res) => {
  * Verifies live token validity and tests Meta Graph API access.
  */
 export const testConnection = asyncHandler(async (req, res) => {
-  const account = await InstagramAccount.findOne({
+  let account = await InstagramAccount.findOne({
     userId: req.session.userId,
     isConnected: true,
   }).select('+encryptedAccessToken +tokenIv +tokenAuthTag');
+
+  if (!account && env.INSTAGRAM_ACCESS_TOKEN && req.session?.userId) {
+    await linkAccountWithToken(req.session.userId, env.INSTAGRAM_ACCESS_TOKEN);
+    account = await InstagramAccount.findOne({
+      userId: req.session.userId,
+      isConnected: true,
+    }).select('+encryptedAccessToken +tokenIv +tokenAuthTag');
+  }
 
   if (!account) {
     return sendError(
