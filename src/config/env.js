@@ -17,7 +17,7 @@ const envSchema = z.object({
   META_APP_SECRET: z.string().min(1),
   META_REDIRECT_URI: z.string().url().default('https://reelflow-5s62.onrender.com/api/instagram/callback'),
   INSTAGRAM_API_VERSION: z.string().default('v21.0'),
-  ALLOWED_ORIGINS: z.string().default('https://reelflow-nu.vercel.app,http://localhost:5173'),
+  ALLOWED_ORIGINS: z.string().optional().default('*'),
 });
 
 const parsed = envSchema.safeParse(process.env);

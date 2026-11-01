@@ -20,47 +20,40 @@ app.set('trust proxy', 1);
 // ─── Security Headers ─────────────────────────────────────────────────────────
 app.use(
   helmet({
-    contentSecurityPolicy: env.NODE_ENV === 'production',
-    crossOriginResourcePolicy: { policy: 'cross-origin' },
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: false,
   })
 );
 
-// ─── CORS ─────────────────────────────────────────────────────────────────────
-const configuredOrigins = [
-  env.CLIENT_URL,
-  ...(env.ALLOWED_ORIGINS ? env.ALLOWED_ORIGINS.split(',') : []),
-  'https://reelflow-nu.vercel.app',
-  'http://localhost:5173',
-  'http://localhost:3000',
-]
-  .filter(Boolean)
-  .map((o) => o.trim().replace(/\/$/, ''));
+// ─── Unrestricted CORS (Allow Any Origin & Preflight) ─────────────────────────
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, PATCH, DELETE, OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Headers',
+    'Origin, X-Requested-With, Content-Type, Accept, Authorization, Cookie, *'
+  );
+  res.setHeader('Access-Control-Expose-Headers', 'Set-Cookie');
 
-const corsOptions = {
-  origin: (origin, callback) => {
-    if (!origin) return callback(null, true);
-    const cleanOrigin = origin.replace(/\/$/, '');
-    const isAllowed =
-      configuredOrigins.includes(cleanOrigin) ||
-      configuredOrigins.includes(origin) ||
-      cleanOrigin.endsWith('.vercel.app') ||
-      /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(cleanOrigin);
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
 
-    if (isAllowed) {
-      return callback(null, true);
-    }
-    logger.warn('CORS blocked request', { origin });
-    return callback(new Error('Not allowed by CORS'));
-  },
-  credentials: true,
-  methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  exposedHeaders: ['Set-Cookie'],
-  optionsSuccessStatus: 200,
-};
-
-app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+app.use(
+  cors({
+    origin: (origin, callback) => callback(null, true),
+    credentials: true,
+  })
+);
+app.options('*', cors());
 
 // ─── Body Parsers ─────────────────────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));
